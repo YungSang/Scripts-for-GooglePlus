@@ -1,6 +1,6 @@
 # Scripts for Google＋
 
-[Google+](https://google.com/+) で利用するスクリプトです。
+[Google+](https://www.google.com/+) で利用するスクリプトです。
 
 ## 各スクリプトの説明
 
