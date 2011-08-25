@@ -4,7 +4,7 @@
 // @description Convert a video link to an embedded video.
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.2.0
+// @version     0.2.1
 // ==/UserScript==
 
 function addJQuery(callback) {
@@ -49,6 +49,7 @@ addJQuery(function($) {
 		$links.each(function() {
 			var self = this;
 			var $this = $(this).addClass('gve_parsed');
+			if (this.parentNode.childNodes.length > 1) return;
 			$.each(converters, function(index, value) {
 				if (self.href.match(value.regex)) {
 log(this.href);
