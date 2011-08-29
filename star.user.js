@@ -4,7 +4,7 @@
 // @description Added the star functionality, pulled out from Usability Boost for Google Plus Chrome Extension
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.1.0
+// @version     0.2.0
 // ==/UserScript==
 
 (function() {
@@ -12,27 +12,35 @@
 /*
  * Google+ CSS
  *
- * version : 20110822-002
+ * version : 20110822 & 20110829
  */
 	var SELECTOR = {
-		sparks          : '.a-f-a4-ob-B',
+		sparks          : '.a-f-a4-ob-B, .c-i-ica-Qa-C',
 
-		sub_title       : '.vo',
-		share_box       : '.i-Wd',
-		posts           : '.br',
+		sub_title       : '.vo, .op',
+		share_box       : '.i-Wd, .f-ad',
+		posts           : '.br, .Sq',
 
 		individual_post : 'div[id^="update-"]',
-			post_header   : '.kr', // not used
-				post_icon   : '.Km img',
-				post_name   : '.nC a',
-				post_info   : '.Nw', // not used
-					post_date : '.Fl',
-			post_content  : '.un'
+			post_header   : '.kr, .jr', // not used
+				post_icon   : '.Km img, .Nm img',
+				post_info   : '.Nw, .Ex', // not used
+					post_name : '.nC a, .eE a',
+					post_date : '.Fl, .hl',
+			post_content  : '.un.Ao, .Us.Gk',
+
+		stream_link     : '.b-j.a-f-j-Ja.a-ob-j.a-ob-oh-j'
 	};
 
 	var CLASSES = {
-		stream_link : 'b-j a-f-j-Ja a-ob-j a-ob-oh-j',
-		circle_link : 'a-f-ob-oh-j',
+		stream_link : [
+			'b-j a-f-j-Ja a-ob-j a-ob-oh-j',
+			'a-j c-i-j-ua c-Qa-j c-Qa-gg-j'
+		],
+		circle_link : [
+			'a-f-ob-oh-j',
+			'c-i-Qa-gg-j'
+		]
 	};
 
 /*
@@ -159,7 +167,7 @@
 				var favoriteNode = document.createElement('a');
 				favoriteNode.href = '';
 				favoriteNode.id = 'favoritesLink';
-				favoriteNode.className = CLASSES.stream_link;
+				favoriteNode.className = class_stream_link;
 				favoriteNode.innerHTML = 'Starred <strong>(' + favorites.length + ')</strong>';
 				favoriteNode.onclick = function(){
 					var nodes = sparksNode.parentNode.querySelectorAll('a');
@@ -169,7 +177,7 @@
 						node.style.color = '#333';
 						node.style.fontWeight = 'normal';
 						try {
-							if (node.className.indexOf(CLASSES.circle_link) != -1) {
+							if (node.className.indexOf(class_circle_link) != -1) {
 								node.style.backgroundImage = 'url(https://ssl.gstatic.com/s2/oz/images/nav/nav_ci_link_icon.png)';
 							}
 						} catch(e){}
@@ -177,7 +185,7 @@
 
 					this.style.color = '';
 					this.style.fontWeight = '';
-					this.className = CLASSES.stream_link + ' selected';
+					this.className = class_stream_link + ' selected';
 
 					var postContainer = document.body.querySelector(SELECTOR.posts);
 					postContainer.style.display = 'none';
@@ -335,9 +343,19 @@
 */}
 	setCSSFromFunction(starred_css);
 
-	document.addEventListener("DOMContentLoaded", function() {
-		update();
-	});
+	var class_stream_link;
+	var class_circle_link;
+
+	var stream_link = document.querySelectorAll(SELECTOR.stream_link);
+	if (stream_link.length) {
+		class_stream_link = CLASSES.stream_link[0];
+		class_circle_link = CLASSES.circle_link[0];
+	}
+	else {
+		class_stream_link = CLASSES.stream_link[1];
+		class_circle_link = CLASSES.circle_link[1];
+	}
+
 	update();
 
 })();
