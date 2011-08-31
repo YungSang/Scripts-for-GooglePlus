@@ -4,7 +4,7 @@
 // @description Added the star functionality, pulled out from Usability Boost for Google Plus Chrome Extension
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.2.0
+// @version     0.3.0
 // ==/UserScript==
 
 (function() {
@@ -12,10 +12,11 @@
 /*
  * Google+ CSS
  *
- * version : 20110822 & 20110829
+ * version : 20110831
  */
 	var SELECTOR = {
-		sparks          : '.a-f-a4-ob-B, .c-i-ica-Qa-C',
+		sparks          : '.a-f-a4-ob-B, .c-i-ica-Qa-C, a[href="/sparks"]',
+		links           : 'a.a-j.c-i-j-ua.tg3b4c',
 
 		sub_title       : '.vo, .op',
 		share_box       : '.i-Wd, .f-ad',
@@ -29,17 +30,25 @@
 					post_date : '.Fl, .hl',
 			post_content  : '.un.Ao, .Us.Gk',
 
-		stream_link     : '.b-j.a-f-j-Ja.a-ob-j.a-ob-oh-j'
+		stream_link     : '.b-j.a-f-j-Ja.a-ob-j.a-ob-oh-j',
+		stream_link2    : '.a-j.c-i-j-ua.c-Qa-j.c-Qa-gg-j'
 	};
 
 	var CLASSES = {
 		stream_link : [
 			'b-j a-f-j-Ja a-ob-j a-ob-oh-j',
-			'a-j c-i-j-ua c-Qa-j c-Qa-gg-j'
+			'a-j c-i-j-ua c-Qa-j c-Qa-gg-j',
+			'a-j c-i-j-ua tg3b4c eYNw4c'
 		],
 		circle_link : [
 			'a-f-ob-oh-j',
-			'c-i-Qa-gg-j'
+			'c-i-Qa-gg-j',
+			'SSGeYb'
+		],
+		selected_link : [
+			'',
+			'',
+			'NksfUe'
 		]
 	};
 
@@ -174,13 +183,33 @@
 					var ln = nodes.length;
 					for (z = 0 ; z < ln ; z++) {
 						var node = nodes[z];
-						node.style.color = '#333';
-						node.style.fontWeight = 'normal';
 						try {
 							if (node.className.indexOf(class_circle_link) != -1) {
 								node.style.backgroundImage = 'url(https://ssl.gstatic.com/s2/oz/images/nav/nav_ci_link_icon.png)';
 							}
 						} catch(e){}
+						if (css_version == 2) {
+							node.className = node.className.replace(' ' + class_selected_link, '');
+							node.parentNode.className = node.parentNode.className.replace(' ' + class_selected_link, '');
+						}
+						else {
+							node.style.color = '#333';
+							node.style.fontWeight = 'normal';
+						}
+					}
+
+					if (css_version == 2) {
+						var nodes = document.body.querySelectorAll(SELECTOR.links);
+						for (i = 0, len = nodes.length ; i < len ; i++) {
+							var node = nodes[i];
+							if (node.id == 'favoritesLink') continue;
+							node.addEventListener('click', function() {
+								favoriteNode.className = class_stream_link;
+								if (this.className.indexOf(class_selected_link) == -1) {
+									this.className = this.className + ' ' + class_selected_link;
+								}
+							});
+						}
 					}
 
 					this.style.color = '';
@@ -217,7 +246,12 @@
 
 					return false;
 				}
-				sparksNode.parentNode.insertBefore(favoriteNode, sparksNode);
+				if (css_version == 2) {
+					sparksNode.parentNode.insertBefore(favoriteNode, sparksNode.previousSibling);
+				}
+				else {
+					sparksNode.parentNode.insertBefore(favoriteNode, sparksNode);
+				}
 			}
 		} catch(e){}
 
@@ -285,6 +319,8 @@
 	function starred_css() {/*
 		#favoritesLink {
 			background: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAoCAYAAADOvcv6AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAzNJREFUeNrsVUtPE1EUvvPsFNpAaGmnCU2qQuikCaHERIwQA5jgzh/AzoSk6sIEFN2zAmOILhA3/gY2LtyAxi0uWPTBQqqFQAot4dHCvNr63bGttMUGF+64TTN3zj3fnHO+c+YbhlywksmkpKrqGt0Xi8XBUCiUq/dhLwICNCkIQrcoij0sy0Yu8mHqDaurq7zP50u53W4fx3Fkb28vvbOz0zUyMmI2jSjL8gQAUmtrK5EkiWDPwfagIWIsFltmGGa8VCpJFWNnZ+eJw+Fw0v3p6ameTqfFKoBhVFy+MIlEIu1yuTxwJJdZ+XyeZDKZQxaZjB4cHBxns1mCqH8F0DP4UVAemCGLnGg06gCLKzAMeDwejuf5GpBpmmR/f7+AFc/lcsPhcPiwhtWNjY1UR0eHvz7tcnrZ3d1ducJulVVE7Uc6MmWzfrW0tNBLm9frvdnQDqQ6297eLoA16/7o6Mj609qozel08ihlrmYA4vF4AIcxv99vp46ox9A0LYkjDfUqqJun4K2tLdpXpbe3N1GJeBfjlaG1bG9v64ZhLKCeUDAY7MOsTmNyNHpmt9tTIGisGhH1DeGJnzCX33A7BcDa+RrX19e7MEVLAN2D331FUT4zzXrXbF0B/xX48+UTCf1bK78Vg9dfLV1OcwCaZBm2G33tQd8il4qYePqQt9lsKUySj46ZrulpVVO7gm8+NNccgCYAkHiOJxzL0QHnYGvUnM1nkWUM3jgpkarmiDbxBEBLczBmOgZePKeLlubw2NxGWlaEc8tZ2eBtEMvv4281KJiSruu3WKQyaujGsW7oCNpEc/CjPgDlgRmyyNl8HnGAwRUYBhCdA6O1LJeKFFCAb7xgFoZvvH5/WMPqj5nHKUEU/HVp0/QoMIta5Qq71Ucjaj/Skans16+yrc0m2ho1B6nOQncEpvw5MUzD+tPaqA0SQuVjrmYAkjOPAtjHIA12yo+mawamx9Ic1KugPVbu6plK+6oE5hf/aA4iZlA4OVPPdDxsAfWErs2/60PEaXz2NPSTsBybwtlYNVXcfC8Wii7Q/RW3dwJziy8qJGD/FtG7TcP8CB8vso5eScf/Av4SYACnRKyQdyiLMQAAAABJRU5ErkJggg==) 1px 6px no-repeat;
+			margin-left: 10px;
+			padding-left: 20px;
 		}
 		#favoritesLink.selected {
 			background-position: 1px -14px;
@@ -345,15 +381,26 @@
 
 	var class_stream_link;
 	var class_circle_link;
+	var class_selected;
+	var css_version = 1;
 
-	var stream_link = document.querySelectorAll(SELECTOR.stream_link);
+	var stream_link  = document.querySelectorAll(SELECTOR.stream_link);
+	var stream_link2 = document.querySelectorAll(SELECTOR.stream_link2);
 	if (stream_link.length) {
-		class_stream_link = CLASSES.stream_link[0];
-		class_circle_link = CLASSES.circle_link[0];
+		class_stream_link   = CLASSES.stream_link[0];
+		class_circle_link   = CLASSES.circle_link[0];
+		class_selected_link = CLASSES.selected_link[0];
+	}
+	else if (stream_link2.length) {
+		class_stream_link   = CLASSES.stream_link[1];
+		class_circle_link   = CLASSES.circle_link[1];
+		class_selected_link = CLASSES.selected_link[2];
 	}
 	else {
-		class_stream_link = CLASSES.stream_link[1];
-		class_circle_link = CLASSES.circle_link[1];
+		class_stream_link   = CLASSES.stream_link[2];
+		class_circle_link   = CLASSES.circle_link[2];
+		class_selected_link = CLASSES.selected_link[2];
+		css_version = 2;
 	}
 
 	update();
