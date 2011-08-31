@@ -4,7 +4,7 @@
 // @description Added the star functionality, pulled out from Usability Boost for Google Plus Chrome Extension
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.3.0
+// @version     0.3.1
 // ==/UserScript==
 
 (function() {
@@ -18,7 +18,7 @@
 		sparks          : '.a-f-a4-ob-B, .c-i-ica-Qa-C, a[href="/sparks"]',
 		links           : 'a.a-j.c-i-j-ua.tg3b4c',
 
-		sub_title       : '.vo, .op',
+		sub_title       : '.vo, .op, .Nqa',
 		share_box       : '.i-Wd, .f-ad',
 		posts           : '.br, .Sq',
 
@@ -179,7 +179,7 @@
 				favoriteNode.className = class_stream_link;
 				favoriteNode.innerHTML = 'Starred <strong>(' + favorites.length + ')</strong>';
 				favoriteNode.onclick = function(){
-					var nodes = sparksNode.parentNode.querySelectorAll('a');
+					var nodes = sparksNode.parentNode.querySelectorAll(SELECTOR.links);
 					var ln = nodes.length;
 					for (z = 0 ; z < ln ; z++) {
 						var node = nodes[z];
@@ -191,24 +191,17 @@
 						if (css_version == 2) {
 							node.className = node.className.replace(' ' + class_selected_link, '');
 							node.parentNode.className = node.parentNode.className.replace(' ' + class_selected_link, '');
-						}
-						else {
-							node.style.color = '#333';
-							node.style.fontWeight = 'normal';
-						}
-					}
-
-					if (css_version == 2) {
-						var nodes = document.body.querySelectorAll(SELECTOR.links);
-						for (i = 0, len = nodes.length ; i < len ; i++) {
-							var node = nodes[i];
-							if (node.id == 'favoritesLink') continue;
 							node.addEventListener('click', function() {
+								if (this.id == 'favoritesLink') return;
 								favoriteNode.className = class_stream_link;
 								if (this.className.indexOf(class_selected_link) == -1) {
 									this.className = this.className + ' ' + class_selected_link;
 								}
 							});
+						}
+						else {
+							node.style.color = '#333';
+							node.style.fontWeight = 'normal';
 						}
 					}
 
@@ -233,7 +226,7 @@
 					titlePage.innerHTML = 'Starred';
 
 					var shareBox = document.body.querySelector(SELECTOR.share_box);
-					shareBox.innerHTML = '';
+					if (shareBox) shareBox.innerHTML = '';
 
 					favorites = JSON.parse(localStorage['favorites']); // update if changes has been made in other tabs
 					favorites.sort(sortDates);
