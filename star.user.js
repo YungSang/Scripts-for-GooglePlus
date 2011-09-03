@@ -4,12 +4,12 @@
 // @description Added the star functionality, pulled out from Usability Boost for Google Plus Chrome Extension
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.5.0
+// @version     0.5.1
 // ==/UserScript==
 
 function addJQuery(callback) {
 	var script = document.createElement("script");
-	script.setAttribute("src", "http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js");
+	script.setAttribute("src", "//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js");
 	script.addEventListener('load', function() {
 		var script = document.createElement("script");
 		script.textContent = "(" + callback.toString() + ")(jQuery.noConflict());";
@@ -310,7 +310,7 @@ addJQuery(function($) {
 
 			background-color:#FFF;
 			margin-bottom:18px;
-			border-radius:4px;	
+			border-radius:4px;
 
 			border-top:1px solid #DDD !important;
 			border-left:1px solid #DDD;
@@ -318,9 +318,9 @@ addJQuery(function($) {
 			box-shadow: 1px 1px 1px #AAA;
 		}
 		div.minipost img {
-			float:left;	
+			float:left;
 			border-radius:2px;
-			box-shadow: 1px 1px 1px rgba(0,0,0,.4);	
+			box-shadow: 1px 1px 1px rgba(0,0,0,.4);
 			margin-right:12px;
 		}
 		div.minipost:hover {
