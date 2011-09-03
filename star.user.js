@@ -4,24 +4,27 @@
 // @description Added the star functionality, pulled out from Usability Boost for Google Plus Chrome Extension
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.3.1
+// @version     0.5.0
 // ==/UserScript==
 
-(function() {
+function addJQuery(callback) {
+	var script = document.createElement("script");
+	script.setAttribute("src", "http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js");
+	script.addEventListener('load', function() {
+		var script = document.createElement("script");
+		script.textContent = "(" + callback.toString() + ")(jQuery.noConflict());";
+		document.body.appendChild(script);
+	}, false);
+	document.body.appendChild(script);
+}
 
+addJQuery(function($) {
 /*
  * Google+ CSS
  *
  * version : 20110831
  */
 	var SELECTOR = {
-		sparks          : '.a-f-a4-ob-B, .c-i-ica-Qa-C, a[href="/sparks"]',
-		links           : 'a.a-j.c-i-j-ua.tg3b4c',
-
-		sub_title       : '.vo, .op, .Nqa',
-		share_box       : '.i-Wd, .f-ad',
-		posts           : '.br, .Sq',
-
 		individual_post : 'div[id^="update-"]',
 			post_header   : '.kr, .jr', // not used
 				post_icon   : '.Km img, .Nm img',
@@ -29,31 +32,16 @@
 					post_name : '.nC a, .eE a',
 					post_date : '.Fl, .hl',
 			post_content  : '.un.Ao, .Us.Gk',
-
-		stream_link     : '.b-j.a-f-j-Ja.a-ob-j.a-ob-oh-j',
-		stream_link2    : '.a-j.c-i-j-ua.c-Qa-j.c-Qa-gg-j'
 	};
 
-	var CLASSES = {
-		stream_link : [
-			'b-j a-f-j-Ja a-ob-j a-ob-oh-j',
-			'a-j c-i-j-ua c-Qa-j c-Qa-gg-j',
-			'a-j c-i-j-ua tg3b4c eYNw4c'
-		],
-		circle_link : [
-			'a-f-ob-oh-j',
-			'c-i-Qa-gg-j',
-			'SSGeYb'
-		],
-		selected_link : [
-			'',
-			'',
-			'NksfUe'
-		]
-	};
+	var class_link_selected = 'NksfUe';
+
+	function get_link_class(streamNode) {
+		return streamNode.className.split(' ').slice(0, 4).join(' ');
+	}
 
 /*
- * Main
+ * localStorage
  */
 	if (localStorage['favorites'] == null) {
 		localStorage['favorites'] = JSON.stringify([]);
@@ -81,10 +69,80 @@
 		return false;
 	}
 	function updateFavoriteCount() {
-		try {		
-			var elm = document.getElementById('favoritesLink');
-			elm.innerHTML = 'Starred <strong>(' + favorites.length + ')</strong>';
-		} catch(e){}
+		favorites = JSON.parse(localStorage['favorites']);
+		$('#favoritesLink').html('Starred <strong>(' + favorites.length + ')</strong>');
+	}
+
+/*
+ * Main
+ */
+	var timer = null;
+	function update() {
+		if (timer) {
+			clearTimeout(timer);
+			timer = null;
+		}
+
+		$(SELECTOR.individual_post).each(function() {
+			setStarToPost(this);
+		});
+
+		var $favoritesLink = $('#favoritesLink');
+		if (!$favoritesLink.length) {
+			var $notification = $('a[href="/notifications/all"]');
+
+			var $favoritesLink = $('<a id="favoritesLink"/>')
+				.addClass(get_link_class($notification.get(0)))
+				.click(function() {
+					var $this = $(this).addClass('selected');
+
+					var $contentPane = $('#contentPane');
+					$contentPane.children().each(function() {
+						$(this).hide();
+					});
+
+					var $starredPane = $('#starred_pane');
+					if (!$starredPane.length) {
+						$contentPane.append(functionToString(starred_html));
+						$starredPane = $('#starred_pane');
+					}
+					$starredPane.show();
+
+					var $postContainer = $('#starred_stream').empty();
+
+					$('a', $notification.parent()).each(function() {
+						var $this = $(this);
+						$this.removeClass(class_link_selected);
+						$this.parent().removeClass(class_link_selected);
+						$this.click(function() {
+							if (this.id == 'favoritesLink') return;
+							$starredPane.hide();
+							$postContainer.empty();
+							$favoritesLink.removeClass('selected');
+							$(this).addClass(class_link_selected);
+						});
+					});
+
+					updateFavoriteCount(); // changes might have been made in other tabs
+					favorites.sort(function(a, b) {
+						var A = new Date(a.post_date);
+						var B = new Date(b.post_date);
+						return B - A;
+					});
+
+					$.each(favorites, function(i, favorite) {
+						addMiniPost(favorite, $postContainer);
+					});
+
+					return false;
+				})
+				.html('Starred <strong>(' + favorites.length + ')</strong>');
+
+			$notification.after($favoritesLink);
+		}
+
+		updateFavoriteCount(); // changes might have been made in other tabs
+		timer = setTimeout(update, 500);
 	}
 
 	function setStarToPost(elm) {
@@ -93,219 +151,116 @@
 		}
 		elm.added_star = true;
 
-		var isStarred = isFavorite(elm.id);
+		var $elm = $(elm);
 
-		var starHolder = document.createElement('div');
+		var $starHolder = $('<div class="post_star"/>')
+			.hover(
+				function() {
+					$(this).addClass('starred');
+				},
+				function() {
+					if (!isFavorite(elm.id)) $(this).removeClass('starred');
+				}
+			)
+			.click(function() {
+				var $this = $(this);
 
-		if (isStarred) {
-			starHolder.className = 'post_star starred';
-		} else {
-			starHolder.className = 'post_star';
+				if (isFavorite(elm.id)) {
+					$this.removeClass('starred');
+					removeFavorite(elm.id);
+					storeFavorites();
+				} else {
+					$this.addClass('starred');
+
+					var $nameLink   = $(SELECTOR.post_name,    $elm);
+					var $contentBox = $(SELECTOR.post_content, $elm);
+					var $imgElm     = $(SELECTOR.post_icon,    $elm);
+					var $postLink   = $(SELECTOR.post_date,    $elm);
+
+					favorites.push({
+						id          : elm.id,
+						name        : $nameLink.html(),
+						post_date   : $postLink.attr('title'),
+						post_url    : $postLink.attr('href'),
+						text        : $contentBox.get(0).innerText.substring(0, 130) + '...',
+						picture_url : $imgElm.attr('src')
+					});
+					storeFavorites();
+				}
+
+				updateFavoriteCount();
+			});
+
+		if (isFavorite(elm.id)) {
+			$starHolder.addClass('starred');
 		}
 
-		elm.appendChild(starHolder);
-
-		starHolder.addEventListener('mouseover', function(e) {
-			e.target.className = 'post_star starred';
-		});
-		starHolder.addEventListener('mouseout', function(e) {
-			if (!isStarred) {
-				e.target.className = 'post_star';
-			}
-		});
-
-		starHolder.addEventListener('click', function(e) {
-			var nameLink = elm.querySelector(SELECTOR.post_name);
-
-			if (isStarred) {
-				isStarred = false;
-				e.target.className = 'post_star';
-				removeFavorite(elm.id);
-			} else {
-				isStarred = true;
-				e.target.className = 'post_star starred';
-
-				var contentBox = elm.querySelector(SELECTOR.post_content);
-				var text = contentBox.innerText.replace(/\n/g, ' ').substring(0, 130) + '...';
-
-				var imgElm = elm.querySelectorAll(SELECTOR.post_icon)[0];
-				var picture_url = imgElm.src;
-
-				var postLink = elm.querySelector(SELECTOR.post_date);
-
-				var obj = {
-					id          : elm.id,
-					name        : nameLink.innerHTML,
-					post_date   : postLink.title,
-					post_url    : postLink.href,
-					text        : text,
-					picture_url : picture_url
-				};
-
-				favorites.push(obj);
-			}
-
-			storeFavorites();
-			updateFavoriteCount();
-		});
+		$elm.append($starHolder);
 	}
 
-	function sortDates(a, b) {
-		var A = new Date(a.post_date);
-		var B = new Date(b.post_date);
-		return B- A;
-	}
+	function addMiniPost(favorite, $container){
+		var $divMiniPost = $('<div/>').attr('id', favorite.id).addClass('minipost');
 
-	var timer = null;
-	function update() {
-		if (timer) {
-			clearTimeout(timer);
-			timer = null;
-		}
-		var elms = document.body.querySelectorAll(SELECTOR.individual_post);
-		for (var i = 0, len = elms.length ; i < len ; i++) {
-			var elm = elms[i];
-			setStarToPost(elm);
-		}
+		$('<img/>').attr('src', favorite.picture_url).appendTo($divMiniPost);
 
-		try {
-			var favoritesLink = document.getElementById('favoritesLink');
-			if (favoritesLink == null) {		
-				var sparksNode = document.body.querySelector(SELECTOR.sparks);			
-				
-				var favoriteNode = document.createElement('a');
-				favoriteNode.href = '';
-				favoriteNode.id = 'favoritesLink';
-				favoriteNode.className = class_stream_link;
-				favoriteNode.innerHTML = 'Starred <strong>(' + favorites.length + ')</strong>';
-				favoriteNode.onclick = function(){
-					var nodes = sparksNode.parentNode.querySelectorAll(SELECTOR.links);
-					var ln = nodes.length;
-					for (z = 0 ; z < ln ; z++) {
-						var node = nodes[z];
-						try {
-							if (node.className.indexOf(class_circle_link) != -1) {
-								node.style.backgroundImage = 'url(https://ssl.gstatic.com/s2/oz/images/nav/nav_ci_link_icon.png)';
-							}
-						} catch(e){}
-						if (css_version == 2) {
-							node.className = node.className.replace(' ' + class_selected_link, '');
-							node.parentNode.className = node.parentNode.className.replace(' ' + class_selected_link, '');
-							node.addEventListener('click', function() {
-								if (this.id == 'favoritesLink') return;
-								favoriteNode.className = class_stream_link;
-								if (this.className.indexOf(class_selected_link) == -1) {
-									this.className = this.className + ' ' + class_selected_link;
-								}
-							});
-						}
-						else {
-							node.style.color = '#333';
-							node.style.fontWeight = 'normal';
-						}
-					}
-
-					this.style.color = '';
-					this.style.fontWeight = '';
-					this.className = class_stream_link + ' selected';
-
-					var postContainer = document.body.querySelector(SELECTOR.posts);
-					postContainer.style.display = 'none';
-					postContainer.nextSibling.innerHTML = '';
-
-					try {
-						var oldStarredContainer = document.getElementById('starred_container');
-						oldStarredContainer.parentNode.removeChild(oldStarredContainer);
-					} catch(e){}
-
-					var divContainer = document.createElement('div');
-					divContainer.id = 'starred_container';
-					postContainer.parentNode.insertBefore(divContainer, postContainer);					
-
-					var titlePage = document.body.querySelector(SELECTOR.sub_title);
-					titlePage.innerHTML = 'Starred';
-
-					var shareBox = document.body.querySelector(SELECTOR.share_box);
-					if (shareBox) shareBox.innerHTML = '';
-
-					favorites = JSON.parse(localStorage['favorites']); // update if changes has been made in other tabs
-					favorites.sort(sortDates);
-
-					var ln = favorites.length;
-					for (var i = 0 ; i < ln ; i++) {
-						var favorite = favorites[i];
-						addMiniPost(favorite, divContainer);
-					}
-
-					return false;
-				}
-				if (css_version == 2) {
-					sparksNode.parentNode.insertBefore(favoriteNode, sparksNode.previousSibling);
-				}
-				else {
-					sparksNode.parentNode.insertBefore(favoriteNode, sparksNode);
-				}
-			}
-		} catch(e){}
-
-		timer = setTimeout(update, 500);
-	}
-
-	function addMiniPost(favorite, container){
-		var divMiniPost = document.createElement('div');
-		divMiniPost.id = favorite.id;
-		divMiniPost.className = 'minipost';
-
-		var img = document.createElement('img');
-		img.src = favorite.picture_url;
-		divMiniPost.appendChild(img);
-
-		var divStar = document.createElement('div');
-		divStar.className = 'post_star';
-		divStar.onclick = function(e) {
-			e.stopPropagation();
+		$('<div class="post_star"/>').click(function(event) {
 			removeFavorite(favorite.id);
 			storeFavorites();
 			updateFavoriteCount();
-			divMiniPost.parentNode.removeChild(divMiniPost);
-		}
-		divMiniPost.appendChild(divStar);
+			$divMiniPost.slideUp(function() {
+				$(this).remove();
+			});
+			event.stopPropagation();
+		}).appendTo($divMiniPost);
 
-		var spanName = document.createElement('span');
-		spanName.style.fontWeight = 'bold';
-		spanName.style.color = '#36C';
-		spanName.innerHTML = favorite.name;
-		divMiniPost.appendChild(spanName);
+		$('<span/>').css({
+			'font-weight' : 'bold',
+			color         : '#36C'
+		}).html(favorite.name).appendTo($divMiniPost);
 
-		divMiniPost.appendChild(document.createTextNode(' - '));
+		$divMiniPost.append(' - ');
 
-		var spanDate = document.createElement('span');
-		spanDate.style.color = '#999';
-		spanDate.innerHTML = favorite.post_date;
-		divMiniPost.appendChild(spanDate);
+		$('<span/>').css({
+			color : '#999'
+		}).html(favorite.post_date).appendTo($divMiniPost);
 
-		var divContent = document.createElement('div');
-		divContent.style.width = '90%';
-		divContent.innerHTML = favorite.text;
-		divMiniPost.appendChild(divContent);
+		$('<div/>').css({
+			width : '90%'
+		}).html(favorite.text).appendTo($divMiniPost);
 
-		var divClear = document.createElement('div');
-		divClear.style.clear = 'both';
-		divMiniPost.appendChild(divClear);
+		$('<div/>').css({
+			clear : 'both'
+		}).appendTo($divMiniPost);
 
-		divMiniPost.onclick = function(e){
+		$divMiniPost.click(function() {
 			window.open(favorite.post_url);
-		}
+		});
 
-		container.appendChild(divMiniPost);
+		$container.append($divMiniPost);
 	}
 
-	function setCSSFromFunction(fnc) {	 
+/*
+ * Template & CSS
+ */
+	function functionToString(func) {
+		return func.toString().match(/\/\*([\s\S]*)\*\//)[1].replace(/^\s+|\s+$/, '');
+	}
+
+	function starred_html() {/*
+		<div id="starred_pane">
+			<div class="starred_header">
+				<span>Starred</span>
+			</div>
+			<div id="starred_body">
+				<div id="starred_stream"></div>
+			</div>
+		</div>
+	*/}
+
+	function setCSSFromFunction(func) {
 		var style = document.createElement('style');
 		style.type = 'text/css';
-		var string = fnc.toString();
-		string = string.match(/\/\*([\s\S]*)\*\//)[1];
-		style.textContent = string;
+		style.textContent = functionToString(func);
 		document.getElementsByTagName('head')[0].appendChild(style);
 	}
 
@@ -335,6 +290,16 @@
 
 		div.post_star.starred {
 			background-position:-20px 0;
+		}
+
+		#starred_pane div.starred_header {
+			margin: 16px 21px 20px 21px;
+			font: 18px arial,sans-serif;
+			color: #333;
+			max-width: 100%;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			white-space: nowrap;
 		}
 
 		div.minipost {
@@ -372,30 +337,5 @@
 */}
 	setCSSFromFunction(starred_css);
 
-	var class_stream_link;
-	var class_circle_link;
-	var class_selected;
-	var css_version = 1;
-
-	var stream_link  = document.querySelectorAll(SELECTOR.stream_link);
-	var stream_link2 = document.querySelectorAll(SELECTOR.stream_link2);
-	if (stream_link.length) {
-		class_stream_link   = CLASSES.stream_link[0];
-		class_circle_link   = CLASSES.circle_link[0];
-		class_selected_link = CLASSES.selected_link[0];
-	}
-	else if (stream_link2.length) {
-		class_stream_link   = CLASSES.stream_link[1];
-		class_circle_link   = CLASSES.circle_link[1];
-		class_selected_link = CLASSES.selected_link[2];
-	}
-	else {
-		class_stream_link   = CLASSES.stream_link[2];
-		class_circle_link   = CLASSES.circle_link[2];
-		class_selected_link = CLASSES.selected_link[2];
-		css_version = 2;
-	}
-
-	update();
-
-})();
+	$(update);
+});
