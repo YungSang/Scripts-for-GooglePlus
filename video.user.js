@@ -4,12 +4,12 @@
 // @description Convert a video link to an embedded video.
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.2.1
+// @version     0.2.2
 // ==/UserScript==
 
 function addJQuery(callback) {
 	var script = document.createElement("script");
-	script.setAttribute("src", "http://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js");
+	script.setAttribute("src", "//ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.min.js");
 	script.addEventListener('load', function() {
 		var script = document.createElement("script");
 		script.textContent = "(" + callback.toString() + ")(jQuery.noConflict());";
