@@ -4,7 +4,7 @@
 // @description Reset external links to a default behavior (especially for FluidApp)
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.3
+// @version     0.3.1
 // ==/UserScript==
 
 function addJQuery(callback) {
@@ -22,7 +22,11 @@ addJQuery(function($) {
 
 	function reset_link() {
 		$('a[href^="http"]').filter(':not(.elc_parsed)').each(function() {
-			var $this = $(this).addClass('elc_parsed').attr('target', '_blank');
+			var $this = $(this).addClass('elc_parsed');
+			if (/^https:\/\/plus\.google\.com\//.test(this.href)) {
+				return;
+			}
+			$this.attr('target', '_blank');
 			this.onclick = function(event) {
 				event.stopPropagation();
 				return true;
