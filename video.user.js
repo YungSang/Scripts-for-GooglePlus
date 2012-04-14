@@ -4,7 +4,7 @@
 // @description Convert a video link to an embedded video.
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.2.2
+// @version     0.3.2
 // ==/UserScript==
 
 function addJQuery(callback) {
@@ -37,7 +37,7 @@ addJQuery(function($) {
 					str = str.replace(/\$2/g, seq);
 					$.getScript(str);
 				}, 0);
-				var str = '<span><div id="nicovideo_$1"></div></span>';
+				var str = '<div style="background-color: rgba(0,0,0,0.9); margin: 0 -17px; padding: 0 17px; width:100%; text-align: center;"><div id="nicovideo_$1"></div></div>';
 				str = str.replace(/\$1/g, seq);
 				return str;
 			}
@@ -45,16 +45,16 @@ addJQuery(function($) {
 	];
 
 	function convert() {
-		var $links = $('a.ot-anchor').filter(':not(.gve_parsed)');
+		var $links = $('a.c-C').filter(':not(.gve_parsed)');
 		$links.each(function() {
 			var self = this;
 			var $this = $(this).addClass('gve_parsed');
-			if (this.parentNode.childNodes.length > 1) return;
+			var box = this.parentNode.parentNode;
 			$.each(converters, function(index, value) {
 				if (self.href.match(value.regex)) {
-log(this.href);
+log(self.href);
 					var html = self.href.replace(value.regex, value.replacement);
-					$this.after(html);
+					$(box).after(html);
 					return;
 				}
 			});
