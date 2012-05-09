@@ -11,10 +11,9 @@
 
 
 1. star.user.js  
-Star (Fav) の機能を追加するパッチ。
-[Usability Boost for Google Plus™](https://chrome.google.com/webstore/detail/dkcppcocablbakkaboahjmljpodddkcp) より抜粋、CSS の変更にも早く対応出来るように変更。
-[Install](https://github.com/YungSang/Scripts-for-GooglePlus/raw/master/star.user.js)
-[Install at userscripts.org](http://userscripts.org/scripts/show/111452)
+Star (Fav) の機能を追加するパッチ。（このスクリプトは現在動作しません。）
+拡張化しましたので、こちら [Star Bookmarks for Google+](http://yungsang.com/google+/starbookmarks/) をご利用下さい。
+
 
 1. video.user.js  
 Google+のインライン表示に対応していないビデオ（現在はニコ動のみ）のリンクをインライン表示にするパッチ。
