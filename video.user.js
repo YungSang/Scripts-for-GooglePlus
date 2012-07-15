@@ -4,7 +4,7 @@
 // @description Convert a video link to an embedded video.
 // @include     https://plus.google.com/*
 // @author      YungSang
-// @version     0.3.3
+// @version     0.3.4
 // ==/UserScript==
 
 function addJQuery(callback) {
@@ -45,7 +45,7 @@ addJQuery(function($) {
 	];
 
 	function convert() {
-		var $links = $('a.c-C, a.a-o.ot-anchor').filter(':not(.gve_parsed)');
+		var $links = $('a.a-n.ot-anchor').filter(':not(.gve_parsed)');
 		$links.each(function() {
 			var self = this;
 			var $this = $(this).addClass('gve_parsed');
